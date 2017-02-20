@@ -72,7 +72,7 @@ def download_imagemap(size):
 @handler.add(FollowEvent)
 def handle_follow(event):
 #友達追加イベント、ここでredisへの登録を行う
-#    sourceId = getSourceId(event.source)
+    sourceId = getSourceId(event.source)
 #    profile = line_bot_api.get_profile(sourceId)
 #    display_name = getUtfName(profile)
 
