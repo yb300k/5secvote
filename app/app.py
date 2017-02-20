@@ -152,9 +152,9 @@ def push_all(vote_key,message):
     for value in data.itervalues():
         line_bot_api.push_message(value,message)
 
-def generateJoinButtons():
+def generateJoinButton():
     message = ImagemapSendMessage(
-        base_url= HEROKU_SERVER_URL + 'images/joinbutton',
+        base_url= HEROKU_SERVER_URL + 'images/button',
         alt_text='join',
         base_size=BaseSize(height=178, width=1040))
     actions=[]
