@@ -21,4 +21,7 @@ MESSAGE_INVALID_VOTE = '#{0}の投票はないですよ。手入力した？'
 
 HEROKU_SERVER_URL = 'https://fivesecvote.herokuapp.com/'
 
+BUTTON_ELEMENT_WIDTH = 520
+BUTTON_ELEMENT_HEIGHT = 178
+
 RESULT_DISPLAY_TIMEOUT = 1
