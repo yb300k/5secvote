@@ -136,7 +136,7 @@ def handle_text_message(event):
 
 def push_result_message(vote_key):
     push_all(vote_key,
-        TextSendMessage(text='3位は))
+        TextSendMessage(text='3位は'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_key,
         TextSendMessage(text='2位は'))
