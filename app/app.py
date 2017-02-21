@@ -83,7 +83,7 @@ def handle_follow(event):
     display_name = getUtfName(profile)
     picture_url = profile.picture_url
     redis.hset(sourceId,'name',display_name)
-    redis.hset(sourceID,'pict',picture_url)
+    redis.hset(sourceId,'pict',picture_url)
 
     line_bot_api.reply_message(
         event.reply_token, TextSendMessage(text='こんにちわ\uD83D\uDE04\n'+
