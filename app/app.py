@@ -69,12 +69,21 @@ def download_imagemap(size):
     return send_from_directory(os.path.join(app.root_path, 'static', 'planning_poker'),
             filename)
 
+def getUtfName(profile):
+    if isinstance(profile.display_name,str):
+        return profile.display_name.decode('utf-8')
+    else:
+        return profile.display_name
+
 @handler.add(FollowEvent)
 def handle_follow(event):
 #友達追加イベント、ここでredisへの登録を行う
     sourceId = getSourceId(event.source)
-#    profile = line_bot_api.get_profile(sourceId)
-#    display_name = getUtfName(profile)
+    profile = line_bot_api.get_profile(sourceId)
+    display_name = getUtfName(profile)
+    picture_url = profile.picture_url
+    redis.hset(sourceId,'name',display_name)
+    redis.hset(sourceID,'pict',picture_url)
 
     line_bot_api.reply_message(
         event.reply_token, TextSendMessage(text='こんにちわ\uD83D\uDE04\n'+
@@ -148,7 +157,7 @@ def push_result_message(vote_key):
         TextSendMessage(text='でした！'))
 
 def push_all(vote_key,message):
-    data = redis.hgetall(vote_key)
+    data = redis.smembers(vote_key)
     for value in data.itervalues():
         line_bot_api.push_message(value,message)
 
