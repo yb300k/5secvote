@@ -101,7 +101,7 @@ def handle_text_message(event):
     if text == 'join':#メンバ集め・・・今後要検討
         join_mutex = Mutex(redis, JOIN_MUTEX_KEY_PREFIX+ sourceId)
         join_mutex.lock()
-        if join_mutex.islock():
+        if join_mutex.is_lock():
             number = str(redis.incr('maxVoteKey')).encode('utf-8')
             time.sleep(JOIN_MUTEX_TIMEOUT)
             if redis.sismember(number,sourceId) == 0:
