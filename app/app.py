@@ -102,13 +102,10 @@ def handle_text_message(event):
         join_mutex = Mutex(redis, JOIN_MUTEX_KEY_PREFIX+ sourceId)
         join_mutex.lock()
         if join_mutex.is_lock():
-            time.sleep(JOIN_MUTEX_TIMEOUT)
             number = str(redis.get('maxVoteKey')).encode('utf-8')
             if redis.sismember(number,sourceId) == 0:
                 redis.sadd(number,sourceId)
                 redis.hset(sourceId,'current',number)
-
-            push_all(number,generate_planning_poker_message)
         else:
             number = str(redis.incr('maxVoteKey')).encode('utf-8')
             if redis.sismember(number,sourceId) == 0:
@@ -116,6 +113,7 @@ def handle_text_message(event):
                 redis.hset(sourceId,'current',number)
             time.sleep(JOIN_MUTEX_TIMEOUT)
             push_all(number,generate_planning_poker_message)
+            join_mutex.unlock()
     elif text == 'add':
         pass
 
@@ -160,7 +158,7 @@ def push_result_message(vote_key):
 
 def push_all(vote_key,message):
     data = redis.smembers(vote_key)
-    for value in data.itervalues():
+    for value in data:
         line_bot_api.push_message(value,message)
 
 def generateJoinButton():
