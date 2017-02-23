@@ -202,7 +202,7 @@ def generate_planning_poker_message(number):
     message = ImagemapSendMessage(
         base_url=HEROKU_SERVER_URL + 'images/planning_poker',
         alt_text='planning poker',
-        base_size=BaseSize(height=790, width=1040))
+        base_size=BaseSize(height=780, width=1040))
     actions=[]
     location=0
     for i in range(0, 3):
