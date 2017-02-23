@@ -12,7 +12,8 @@ JOIN_MUTEX_KEY_PREFIX = 'JOIN_VOTE_'
 VOTE_MUTEX_TIMEOUT = 5
 VOTE_MUTEX_KEY_PREFIX = 'MUTEX_VOTE_'
 
-POKER_IMAGE_FILENAME = 'pp-{0}.png'
+JOIN_IMAGE_FILENAME = 'join-{0}.png'
+
 IMG_PATH = os.path.join(os.path.dirname(__file__), 'static', 'planning_poker')
 TMP_ROOT_PATH = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
 BG_FILE_PATH = os.path.join(os.path.dirname(__file__), 'static', 'planning_poker', 'vote_background.png')

@@ -54,8 +54,8 @@ def callback():
 
 @app.route('/images/button/<size>', methods=['GET'])
 def download_imageam(size):
-    filename = AM_IMAGE_FILENAME.format(size)
-    return send_from_directory(os.path.join(app.root_path, 'static', 'ambutton'),
+    filename = JOIN_IMAGE_FILENAME.format(size)
+    return send_from_directory(os.path.join(app.root_path, 'static', 'button'),
             filename)
 
 
