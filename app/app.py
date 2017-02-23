@@ -102,18 +102,20 @@ def handle_text_message(event):
         join_mutex = Mutex(redis, JOIN_MUTEX_KEY_PREFIX+ sourceId)
         join_mutex.lock()
         if join_mutex.is_lock():
-            number = str(redis.incr('maxVoteKey')).encode('utf-8')
             time.sleep(JOIN_MUTEX_TIMEOUT)
+            number = str(redis.get('maxVoteKey')).encode('utf-8')
             if redis.sismember(number,sourceId) == 0:
                 redis.sadd(number,sourceId)
                 redis.hset(sourceId,'current',number)
 
             push_all(number,generate_planning_poker_message)
         else:
-            number = str(redis.get('maxVoteKey').encode('utf-8'))
+            number = str(redis.incr('maxVoteKey')).encode('utf-8')
             if redis.sismember(number,sourceId) == 0:
                 redis.sadd(number,sourceId)
                 redis.hset(sourceId,'current',number)
+            time.sleep(JOIN_MUTEX_TIMEOUT)
+            push_all(number,generate_planning_poker_message)
     elif text == 'add':
         pass
 
@@ -190,7 +192,7 @@ def genenate_voting_result_message(key):
     buttons_template = ButtonsTemplate(
         title='ポーカー結果',
         text='そろいましたか？',
-        thumbnail_image_url='https://scrummasterbot.herokuapp.com/images/tmp/' + tmp + '/result_11.png',
+        thumbnail_image_url=HEROKU_SERVER_URL + 'images/tmp/' + tmp + '/result_11.png',
         actions=[
             MessageTemplateAction(label='もう１回', text='プラポ')
     ])
@@ -200,7 +202,7 @@ def genenate_voting_result_message(key):
 
 def generate_planning_poker_message(number):
     message = ImagemapSendMessage(
-        base_url='https://scrummasterbot.herokuapp.com/images/planning_poker',
+        base_url=HEROKU_SERVER_URL + 'images/planning_poker',
         alt_text='planning poker',
         base_size=BaseSize(height=790, width=1040))
     actions=[]
