@@ -78,7 +78,7 @@ def _letter2img_cmd(letters,out_file):
     cmd.append('convert -font')
     cmd.append(font_file)
     cmd.append('-size 200x160 -gravity center')
-    cmd.append('label:'+letters)
+    cmd.append('label:\''+letters+'\'')
     cmd.append(out_file)
 
     return ' '.join(cmd)
