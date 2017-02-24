@@ -6,6 +6,8 @@ from random import randint
 
 from const import *
 
+redis = redis.from_url(app.config['REDIS_URL'])
+
 def make_static_dir(path):
     try:
         os.makedirs(path)
