@@ -151,6 +151,7 @@ def handle_text_message(event):
             vote_mutex.unlock()
             poker_mutex.release()
             return
+
         if value == 11:#退出
             line_bot_api.reply_message(
                 event.reply_token, TextSendMessage(text='この投票板から抜けます。また始めるときは参加ボタンをみんなと一緒に押してください'))
@@ -165,18 +166,20 @@ def handle_text_message(event):
                 event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計をお待ちください'))
             return
 
-        redis.hset(sourceId,'voted','Y')
         vote_key = 'res_' + number
 
         if vote_mutex.is_lock():
             redis.hincrby(vote_key, value)
+            redis.hset(sourceId,'voted','Y')
         else:
             line_bot_api.reply_message(
                 event.reply_token, TextSendMessage(text='投票開始ボタンをまだ誰も押してないようです'))
     else:
         current = redis.hget(sourceId,'current').encode('utf-8')
         if current != '-':
-            push_all(current,TextSendMessage(text=text))
+            profile = line_bot_api.get_profile(sourceId)
+            display_name = getUtfName(profile)
+            push_all(current,TextSendMessage(text=display_name + ':' + text))
 
 def push_result_message(vote_num):
     answer_variation = redis.hlen('res_'+vote_num)
