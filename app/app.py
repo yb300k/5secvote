@@ -136,7 +136,7 @@ def handle_text_message(event):
 
         poker_mutex = Mutex(redis, POKER_MUTEX_KEY_PREFIX+ sourceId)
         vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + sourceId)
-        if value == 0:#開始
+        if value == '0':#開始
 
             vote_mutex.lock()
             time.sleep(VOTE_MUTEX_TIMEOUT)
@@ -152,7 +152,7 @@ def handle_text_message(event):
             poker_mutex.release()
             return
 
-        if value == 11:#退出
+        if value == '11':#退出
             line_bot_api.reply_message(
                 event.reply_token, TextSendMessage(text='この投票板から抜けます。また始めるときは参加ボタンをみんなと一緒に押してください'))
             redis.srem(current,sourceId)
