@@ -131,7 +131,7 @@ def handle_text_message(event):
 
         if redis.hget(sourceId,'voted') == 'Y':
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計をお待ちください')
+                event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計をお待ちください'))
             return
         else:
             redis.hset(sourceId,'voted','Y')
