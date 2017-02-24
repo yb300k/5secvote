@@ -112,7 +112,7 @@ def handle_text_message(event):
                 redis.sadd(number,sourceId)
                 redis.hset(sourceId,'current',number)
             time.sleep(JOIN_MUTEX_TIMEOUT)
-            push_all(number,generate_planning_poker_message)
+            push_all(number,generate_planning_poker_message(number))
             join_mutex.unlock()
     elif text == 'add':
         pass
@@ -201,9 +201,10 @@ def genenate_voting_result_message(key):
 def generate_planning_poker_message(number):
     data = redis.smembers(number)
     generate_voting_target_image(number,data)
+    app.logger.info('[number] :' + number)
 
     message = ImagemapSendMessage(
-        base_url=HEROKU_SERVER_URL + 'images/tmp/' + number,
+        base_url= HEROKU_SERVER_URL + 'images/tmp/' + number,
         alt_text='vote board',
         base_size=BaseSize(height=780, width=1040))
     actions=[]

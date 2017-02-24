@@ -45,6 +45,7 @@ entry = {
 }
 
 def generate_voting_target_image(number,data):
+
     for i in range(1, 11):
         display_name = redis.hget(data[i-1],'name')
         path = os.path.join(TMP_ROOT_PATH,i+'.png')
