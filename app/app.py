@@ -124,7 +124,7 @@ def handle_text_message(event):
         current = redis.hget(sourceId,'current').encode('utf-8')
         if current != number:
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='投票板が古かった？もう一度お願いします！')
+                event.reply_token, TextSendMessage(text='投票板が古かった？もう一度お願いします！'))
             line_bot_api.push_message(
                 sourceId,generate_planning_poker_message(current))
             return
