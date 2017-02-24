@@ -3,6 +3,7 @@
 import errno
 import os
 from random import randint
+import redis
 
 from const import *
 
