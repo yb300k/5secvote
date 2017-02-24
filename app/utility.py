@@ -7,6 +7,8 @@ import redis
 
 from const import *
 
+app = Flask(__name__)
+app.config.from_object('config')
 redis = redis.from_url(app.config['REDIS_URL'])
 
 def make_static_dir(path):
