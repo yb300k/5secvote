@@ -128,50 +128,84 @@ def handle_text_message(event):
             line_bot_api.push_message(
                 sourceId,generate_planning_poker_message(current))
             return
+        if value == 0:#開始
+            poker_mutex = Mutex(redis, POKER_MUTEX_KEY_PREFIX+ sourceId)
+            vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + sourceId)
 
-        if redis.hget(sourceId,'voted') == 'Y':
-            line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計をお待ちください'))
-            return
-        else:
-            redis.hset(sourceId,'voted','Y')
-
-        poker_mutex = Mutex(redis, POKER_MUTEX_KEY_PREFIX+ sourceId)
-        vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + sourceId)
-
-        vote_key = 'res_' + number
-
-        vote_mutex.lock()
-        if vote_mutex.is_lock():
-            redis.hincrby(vote_key, value)
+            vote_mutex.lock()
             time.sleep(VOTE_MUTEX_TIMEOUT)
 
             push_result_message(number)
             #結果発表後の結果クリア
-            res_list = redis.hkeys(vote_key)
-            for value in res_list.itervalues():
-                 redis.hdel(vote_key,value)
+            redis.delete(vote_key)
             member_list = redis.smembers(number)
             for value in member_list:
                 redis.hset(value,'voted','N')
 
             vote_mutex.unlock()
             poker_mutex.release()
-        else:
-            redis.hincrby(vote_key, value)
+            return
+        if value == 11:#退出
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text='この投票板から抜けます。また始めるときは参加ボタンをみんなと一緒に押してください'))
+            redis.srem(current,sourceId)
+            redis.hset(sourceId,'current','-')
+            line_bot_api.push_message(
+                sourceId,generateJoinButton())
+            return
 
-def push_result_message(vote_key):
-    push_all(vote_key,
+        if redis.hget(sourceId,'voted') == 'Y':
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計をお待ちください'))
+            return
+
+        redis.hset(sourceId,'voted','Y')
+        vote_key = 'res_' + number
+
+        if vote_mutex.is_lock():
+            redis.hincrby(vote_key, value)
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text='投票開始ボタンをまだ誰も押してないようです'))
+    else:
+        current = redis.hget(sourceId,'current').encode('utf-8')
+        if current != '-':
+            push_all(current,TextSendMessage(text=text))
+
+def push_result_message(vote_num):
+    answer_variation = redis.hlen('res_'+vote_num)
+    if answer_variation == 0:
+        push_all(vote_num,TextSendMessage(text='投票者ゼロでした・・\uD83D\uDE22'))
+        return
+    if answer_variation == 1:
+        three_str = '該当者なし'
+        two_str = '該当者なし'
+        data = redis.hkeys('res_'+vote_num))
+        for value in data:
+            name = getNameFromNum(vote_num,value)
+            if isinstance(name,str):
+                name = name.decode('utf-8')
+        one_str = '全員一致で '+name+' さんでした！'
+    else :
+        pass
+        
+    push_all(vote_num,
         TextSendMessage(text='3位は'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
-    push_all(vote_key,
+    push_all(vote_num,
+        TextSendMessage(text=three_str))
+    time.sleep(RESULT_DISPLAY_TIMEOUT)
+    push_all(vote_num,
         TextSendMessage(text='2位は'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
-    push_all(vote_key,
+    push_all(vote_num,
+        TextSendMessage(text=two_str))
+    time.sleep(RESULT_DISPLAY_TIMEOUT)
+    push_all(vote_num,
         TextSendMessage(text='1位は・・・・'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
-    push_all(vote_key,
-        TextSendMessage(text='でした！'))
+    push_all(vote_num,
+        TextSendMessage(text=one_str))
 
 def push_all(vote_key,message):
     data = redis.smembers(vote_key)
