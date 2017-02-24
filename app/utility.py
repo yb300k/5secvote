@@ -58,6 +58,8 @@ def generate_voting_target_image(number,data):
         path = os.path.join(TMP_ROOT_PATH,str(i)+'.png')
         cmd = _letter2img_cmd(display_name,path)
         os.system(cmd)
+        cmd = _compose_cmd(path)
+        os.system(cmd)
         i += 1
 
     path = os.path.join(TMP_ROOT_PATH, number)
@@ -82,6 +84,15 @@ def _letter2img_cmd(letters,out_file):
     cmd.append(out_file)
 
     return ' '.join(cmd)
+
+def _compose_cmd(namefile):
+    cmd = []
+    cmd.append('convert')
+    memo_file = os.path.join(TMP_ROOT_PATH,'memo.png')
+    cmd.append(memo_file)
+    cmd.append(namefile)
+    cmd.append('-gravity center -compose over -composite')
+    cmd.append(namefile)
 
 def _montage_cmd(path,count):
     out_file = os.path.join(path,'vote-1040.png')
