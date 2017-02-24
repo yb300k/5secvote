@@ -96,11 +96,11 @@ def _montage_cmd(path,count):
         cmd.append(elem_file)
 
     if count < 3:
-        cmd.append('-tile 4x1 -resize 100% -geometry +0+0')
+        cmd.append('-tile 4x1 -resize 100% -geometry 260x260')
     elif count < 7:
-        cmd.append('-tile 4x2 -resize 100% -geometry +0+0')
+        cmd.append('-tile 4x2 -resize 100% -geometry 260x260')
     else:
-        cmd.append('-tile 4x3 -resize 100% -geometry +0+0')
+        cmd.append('-tile 4x3 -resize 100% -geometry 260x260')
 
     cmd.append(out_file)
     return ' '.join(cmd)
