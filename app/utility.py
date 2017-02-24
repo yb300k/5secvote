@@ -94,6 +94,9 @@ def _compose_cmd(namefile):
     cmd.append('-gravity center -compose over -composite')
     cmd.append(namefile)
 
+    return ' '.join(cmd)
+
+
 def _montage_cmd(path,count):
     out_file = os.path.join(path,'vote-1040.png')
 
