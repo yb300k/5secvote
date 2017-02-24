@@ -58,10 +58,11 @@ def download_imageam(size):
     return send_from_directory(os.path.join(app.root_path, 'static', 'button'),
             filename)
 
-
-@app.route('/images/tmp/<number>/<filename>', methods=['GET'])
-def download_result(number, filename):
+@app.route('/images/tmp/<number>/<size>', methods=['GET'])
+def download_vote(number, size):
+    filename = 'vote-' + size + '.png'
     return send_from_directory(os.path.join(app.root_path, 'static', 'tmp', number), filename)
+
 
 @app.route('/images/planning_poker/<size>', methods=['GET'])
 def download_imagemap(size):
