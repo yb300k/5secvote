@@ -92,7 +92,7 @@ def _montage_cmd(path,count):
         if i == count + 1 and count != 10:
             elem_file = os.path.join(TMP_ROOT_PATH,'11.png')
         else:
-            elem_file = os.path.join(TMP_ROOT_PATH,str(i)+'png')
+            elem_file = os.path.join(TMP_ROOT_PATH,str(i)+'.png')
         cmd.append(elem_file)
 
     if count < 3:
