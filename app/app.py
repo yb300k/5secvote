@@ -93,6 +93,11 @@ def handle_follow(event):
     line_bot_api.push_message(
         sourceId,generateJoinButton())
 
+@handler.add(UnFollowEvent)
+def handle_unfollow(event):
+    sourceId = getSourceId(event.source)
+    redis.hset(sourceId,'voted','N')
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
     text = event.message.text
