@@ -44,6 +44,59 @@ entry = {
     '11':'+789+533',
 }
 
+def generate_voting_target_image(number,data):
+    for i in range(1, 11):
+        display_name = redis.hget(data[i-1],'name')
+        path = os.path.join(TMP_ROOT_PATH,i+'.png')
+        cmd = _letter2img_cmd(display_name,path)
+        os.system(cmd)
+
+    path = os.path.join(TMP_ROOT_PATH, number)
+    make_static_dir(path)
+
+    cmd = _montage_cmd(path,len(data))
+    os.system(cmd)
+
+    for size in [240, 300, 460, 700]:
+        resize_cmd = _resize_cmd(path, size)
+        os.system(resize_cmd)
+    return number
+
+
+def _letter2img_cmd(letters,out_file):
+    font_file = os.path.join(TMP_ROOT_PATH,FONT_FILENAME)
+    cmd = []
+    cmd.append('convert -font')
+    cmd.append(font_file)
+    cmd.append('-size 200x160 -gravity center'
+    cmd.append('label:'+letters)
+    cmd.append(out_file)
+
+    return ' '.join(cmd)
+
+def _montage_cmd(path,count):
+    cmd = []
+    cmd.append(montage)
+    for i in range(0,12)
+        cmd.append(i+'.png')
+    out_file = os.path.join(path,'vote-1040.png')
+    cmd.append('-tile 4x3 -resize 100% -geometry +0+0')
+    cmd.append(out_file)
+
+    return cmd
+
+def _resize_cmd(path, size):
+    before = path + '/vote-1040.png'
+    after = path + '/vote-' + str(size) + '.png'
+    cmd = []
+    cmd.append('convert -resize')
+    cmd.append(str(size) + 'x')
+    cmd.append(before)
+    cmd.append('-quality 00')
+#    cmd.append('-colors 8')
+    cmd.append(after)
+    return ' '.join(cmd)
+
 def generate_voting_result_image(data):
     number, path = _tmpdir()
     for i in range(0, 12):
@@ -75,4 +128,3 @@ def _tmpdir():
     path = os.path.join(TMP_ROOT_PATH, number)
     make_static_dir(path)
     return (number, path)
-

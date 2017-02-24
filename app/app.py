@@ -199,16 +199,19 @@ def genenate_voting_result_message(key):
     return template_message
 
 def generate_planning_poker_message(number):
+    data = redis.smembers(number)
+    generate_voting_target_image(number,data)
+
     message = ImagemapSendMessage(
-        base_url=HEROKU_SERVER_URL + 'images/planning_poker',
-        alt_text='planning poker',
+        base_url=HEROKU_SERVER_URL + 'images/tmp/' + number,
+        alt_text='vote board',
         base_size=BaseSize(height=780, width=1040))
     actions=[]
     location=0
     for i in range(0, 3):
         for j in range(0, 4):
             actions.append(MessageImagemapAction(
-                text = u'#' + number + u' ' + mapping[str(location).encode('utf-8')],
+                text = u'#' + number + u' ' + location,
                 area=ImagemapArea(
                     x=j * POKER_IMAGEMAP_ELEMENT_WIDTH,
                     y=i * POKER_IMAGEMAP_ELEMENT_HEIGHT,
