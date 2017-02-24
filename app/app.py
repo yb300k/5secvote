@@ -97,6 +97,7 @@ def handle_follow(event):
 def handle_unfollow(event):
     sourceId = getSourceId(event.source)
     redis.hset(sourceId,'voted','N')
+    redis.hset(sourceId,'current','-')
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
@@ -138,6 +139,7 @@ def handle_text_message(event):
         vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + sourceId)
         if value == '0':#開始
 
+            push_all(number,TextSendMessage(text='投票開始します！名前をタップしてね'))
             vote_mutex.lock()
             time.sleep(VOTE_MUTEX_TIMEOUT)
 
