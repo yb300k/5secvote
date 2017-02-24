@@ -75,11 +75,13 @@ def _letter2img_cmd(letters,out_file):
     return ' '.join(cmd)
 
 def _montage_cmd(path,count):
-    cmd = []
-    cmd.append(montage)
-    for i in range(0,12)
-        cmd.append(i+'.png')
     out_file = os.path.join(path,'vote-1040.png')
+
+    cmd = []
+    cmd.append('montage')
+    for i in range(0,12):
+        elem_file = os.path.join(TMP_ROOT_PATH,i+'png')
+        cmd.append(elem_file)
     cmd.append('-tile 4x3 -resize 100% -geometry +0+0')
     cmd.append(out_file)
 
