@@ -199,9 +199,9 @@ def genenate_voting_result_message(key):
     return template_message
 
 def generate_planning_poker_message(number):
+    app.logger.info('[number] :' + number)
     data = redis.smembers(number)
     generate_voting_target_image(number,data)
-    app.logger.info('[number] :' + number)
 
     message = ImagemapSendMessage(
         base_url= HEROKU_SERVER_URL + 'images/tmp/' + number,
