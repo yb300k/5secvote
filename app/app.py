@@ -180,7 +180,7 @@ def push_result_message(vote_num):
     if answer_variation == 1:
         three_str = '該当者なし'
         two_str = '該当者なし'
-        data = redis.hkeys('res_'+vote_num))
+        data = redis.hkeys('res_'+vote_num)
         for value in data:
             name = getNameFromNum(vote_num,value)
             if isinstance(name,str):
@@ -188,7 +188,7 @@ def push_result_message(vote_num):
         one_str = '全員一致で '+name+' さんでした！'
     else :
         pass
-        
+
     push_all(vote_num,
         TextSendMessage(text='3位は'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
