@@ -121,28 +121,44 @@ def handle_text_message(event):
     elif matcher is not None:
         number = matcher.group(1)
         value = matcher.group(2)
-        current = redis.get(sourceId).encode('utf-8')
-        vote_key = 'res_' + number
-        status = redis.hget(vote_key, 'status')
+        current = redis.hget(sourceId,'current').encode('utf-8')
+        if current != number:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text='投票板が古かった？もう一度お願いします！')
+            line_bot_api.push_message(
+                sourceId,generate_planning_poker_message(current))
+            return
+
+        if redis.hget(sourceId,'voted') == 'Y':
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計をお待ちください')
+            return
+        else:
+            redis.hset(sourceId,'voted','Y')
 
         poker_mutex = Mutex(redis, POKER_MUTEX_KEY_PREFIX+ sourceId)
         vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + sourceId)
-        location = mapping.keys()[mapping.values().index(value)]
+
+        vote_key = 'res_' + number
+
         vote_mutex.lock()
         if vote_mutex.is_lock():
+            redis.hincrby(vote_key, value)
             time.sleep(VOTE_MUTEX_TIMEOUT)
-            redis.hincrby(vote_key, location)
 
             push_result_message(number)
-
+            #結果発表後の結果クリア
             res_list = redis.hkeys(vote_key)
             for value in res_list.itervalues():
                  redis.hdel(vote_key,value)
+            member_list = redis.smembers(number)
+            for value in member_list:
+                redis.hset(value,'voted','N')
 
             vote_mutex.unlock()
             poker_mutex.release()
         else:
-            redis.hincrby(vote_key, location)
+            redis.hincrby(vote_key, value)
 
 def push_result_message(vote_key):
     push_all(vote_key,
