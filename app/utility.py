@@ -52,11 +52,13 @@ entry = {
 
 def generate_voting_target_image(number,data):
 
-    for i in range(1, 11):
-        display_name = redis.hget(data[str(i-1)],'name')
+    i = 1
+    for value in data:
+        display_name = redis.hget(value,'name')
         path = os.path.join(TMP_ROOT_PATH,i+'.png')
         cmd = _letter2img_cmd(display_name,path)
         os.system(cmd)
+        i += 1
 
     path = os.path.join(TMP_ROOT_PATH, number)
     make_static_dir(path)
@@ -86,10 +88,19 @@ def _montage_cmd(path,count):
 
     cmd = []
     cmd.append('montage')
-    for i in range(0,12):
-        elem_file = os.path.join(TMP_ROOT_PATH,i+'png')
+    for i in range(0,count+2):
+        if i == count + 1 and count != 10:
+            elem_file = os.path.join(TMP_ROOT_PATH,'11.png')
+        else:
+            elem_file = os.path.join(TMP_ROOT_PATH,i+'png')
         cmd.append(elem_file)
-    cmd.append('-tile 4x3 -resize 100% -geometry +0+0')
+    if count < 3:
+        cmd.append('-tile 4x1 -resize 100% -geometry +0+0')
+    elif count < 7:
+        cmd.append('-tile 4x2 -resize 100% -geometry +0+0')
+    else:
+        cmd.append('-tile 4x3 -resize 100% -geometry +0+0')
+
     cmd.append(out_file)
 
     return cmd

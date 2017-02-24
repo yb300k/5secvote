@@ -203,23 +203,45 @@ def generate_planning_poker_message(number):
     data = redis.smembers(number)
     generate_voting_target_image(number,data)
 
+    count = len(data)
+    if count < 3:
+        vote_height = 260
+        row_count = 1
+    elif count < 7:
+        vote_height = 520
+        row_count = 2
+    else:
+        vote_height = 780
+        row_count = 3
+
     message = ImagemapSendMessage(
         base_url= HEROKU_SERVER_URL + 'images/tmp/' + number,
         alt_text='vote board',
-        base_size=BaseSize(height=780, width=1040))
+        base_size=BaseSize(height=vote_height, width=1040))
     actions=[]
     location=0
-    for i in range(0, 3):
+    for i in range(0, row_count):
         for j in range(0, 4):
-            actions.append(MessageImagemapAction(
-                text = u'#' + number + u' ' + location,
-                area=ImagemapArea(
-                    x=j * POKER_IMAGEMAP_ELEMENT_WIDTH,
-                    y=i * POKER_IMAGEMAP_ELEMENT_HEIGHT,
-                    width=(j + 1) * POKER_IMAGEMAP_ELEMENT_WIDTH,
-                    height=(i + 1) * POKER_IMAGEMAP_ELEMENT_HEIGHT
-                )
-            ))
-            location+=1
+            if location == count + 1: #最後
+                actions.append(MessageImagemapAction(
+                    text = u'#' + number + u' 11',
+                    area=ImagemapArea(
+                        x=j * POKER_IMAGEMAP_ELEMENT_WIDTH,
+                        y=i * POKER_IMAGEMAP_ELEMENT_HEIGHT,
+                        width=(j + 1) * POKER_IMAGEMAP_ELEMENT_WIDTH,
+                        height=(i + 1) * POKER_IMAGEMAP_ELEMENT_HEIGHT
+                    )
+                ))
+            else:
+                actions.append(MessageImagemapAction(
+                    text = u'#' + number + u' ' + location,
+                    area=ImagemapArea(
+                        x=j * POKER_IMAGEMAP_ELEMENT_WIDTH,
+                        y=i * POKER_IMAGEMAP_ELEMENT_HEIGHT,
+                        width=(j + 1) * POKER_IMAGEMAP_ELEMENT_WIDTH,
+                        height=(i + 1) * POKER_IMAGEMAP_ELEMENT_HEIGHT
+                    )
+                ))
+                location+=1
     message.actions = actions
     return message
