@@ -53,7 +53,7 @@ entry = {
 def generate_voting_target_image(number,data):
 
     for i in range(1, 11):
-        display_name = redis.hget(data[i-1],'name')
+        display_name = redis.hget(data[str(i-1)],'name')
         path = os.path.join(TMP_ROOT_PATH,i+'.png')
         cmd = _letter2img_cmd(display_name,path)
         os.system(cmd)
