@@ -133,9 +133,10 @@ def handle_text_message(event):
             line_bot_api.push_message(
                 sourceId,generate_planning_poker_message(current))
             return
+
+        poker_mutex = Mutex(redis, POKER_MUTEX_KEY_PREFIX+ sourceId)
+        vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + sourceId)
         if value == 0:#開始
-            poker_mutex = Mutex(redis, POKER_MUTEX_KEY_PREFIX+ sourceId)
-            vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + sourceId)
 
             vote_mutex.lock()
             time.sleep(VOTE_MUTEX_TIMEOUT)
