@@ -94,6 +94,7 @@ def _montage_cmd(path,count):
         else:
             elem_file = os.path.join(TMP_ROOT_PATH,str(i)+'png')
         cmd.append(elem_file)
+
     if count < 3:
         cmd.append('-tile 4x1 -resize 100% -geometry +0+0')
     elif count < 7:
@@ -102,8 +103,7 @@ def _montage_cmd(path,count):
         cmd.append('-tile 4x3 -resize 100% -geometry +0+0')
 
     cmd.append(out_file)
-
-    return cmd
+    return ' '.join(cmd)
 
 def _resize_cmd(path, size):
     before = path + '/vote-1040.png'
