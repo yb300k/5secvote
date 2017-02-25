@@ -200,16 +200,16 @@ def handle_text_message(event):
                 line_bot_api.push_message(
                     sourceId,generateJoinButton())
             elif redis.exists(text) == 1:
-                redis.sadd(text,sourceId)
-                redis.hset(sourceId,'current',text)
                 redis.hdel(sourceId,'status')
+                redis.sadd(text,sourceId)
+                redis.hset(text+'_member',redis.scard(text),sourceId)
+                redis.hset(sourceId,'current',text)
                 if redis.hget('status_'+text,'status') is None:
                     push_all(text,TextSendMessage(text='メンバーが増えたので再度投票板を表示します'))
                     push_all(text,TextSendMessage(text='投票No.'+str(text)+' （全参加者'+ str(redis.scard(text)) +
                         '人）の投票板です\uD83D\uDE04\n'+
                         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
                     push_all(text,generate_planning_poker_message(text))
-
             else:
                 line_bot_api.push_message(
                     sourceId, TextSendMessage(text='見つからないです・・参加したい投票No.を再入力してね\uD83D\uDE22（初期画面に戻るなら 0 ）'))
