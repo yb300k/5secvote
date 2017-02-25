@@ -193,7 +193,13 @@ def handle_text_message(event):
             display_name = getUtfName(profile)
             push_all(current,TextSendMessage(text=display_name + ':' + text))
         elif redis.hget(sourceId,'status') == 'number_wait':
-            if redis.exists(text) == 1:
+            if text == '0':
+                redis.hdel(sourceId,'status')
+                line_bot_api.push_message(
+                    sourceId, TextSendMessage(text='始めるときは参加！ボタンをみんなと一緒に押してね\uD83D\uDE04'))
+                line_bot_api.push_message(
+                    sourceId,generateJoinButton())
+            elif redis.exists(text) == 1:
                 redis.sadd(text,sourceId)
                 redis.hset(sourceId,'current',text)
                 redis.hdel(sourceId,'status')
@@ -206,7 +212,7 @@ def handle_text_message(event):
 
             else:
                 line_bot_api.push_message(
-                    sourceId, TextSendMessage(text='参加したい投票No.の再入力おねがいします\uD83D\uDE22'))
+                    sourceId, TextSendMessage(text='見つからないです・・参加したい投票No.を再入力してね\uD83D\uDE22（初期画面に戻るなら 0 ）'))
 
 def resign_operation(number,sourceId):
     line_bot_api.push_message(
@@ -229,7 +235,7 @@ def refresh_board(number):
         redis.hset(number+'_member',i,value)
         i += 1
 
-    push_all(number,TextSendMessage(text='もう1回やるよね？\uD83D\uDE03 抜ける人は 退出する ボタンを押してね\uD83D\uDE4F'))
+    push_all(number,TextSendMessage(text='もう1回やる？\uD83D\uDE03 抜ける人は 退出する ボタンを押してね\uD83D\uDE4F'))
     push_all(number,TextSendMessage(text='投票No.'+str(number)+' （全参加者'+ str(redis.scard(number)) +
         '人）の投票板です\uD83D\uDE04\n'+
         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
