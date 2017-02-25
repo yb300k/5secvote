@@ -154,7 +154,7 @@ def handle_text_message(event):
             if value == '0':#開始
                 vote_mutex.lock()
                 if vote_mutex.is_lock():
-                    push_all(number,TextSendMessage(text='5秒間投票をはじめます！誰に投票する？\uD83D\uDE04'))
+                    push_all(number,TextSendMessage(text='5秒間投票をはじめます！名前をタップして投票してね\uD83D\uDE04'))
                     redis.hset('status_'+number,'status','inprogress')
                     time.sleep(VOTE_MUTEX_TIMEOUT)
 
@@ -241,16 +241,16 @@ def refresh_board(number):
         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
     push_all(number,generate_planning_poker_message(number))
 
-def getNameFromNum(vote_num,field_num):
-    sourceId = redis.hget(vote_num+'_member',field_num)
+def getNameFromNum(vote_num,field_pos):
+    sourceId = redis.hget(vote_num+'_member',field_pos)
     return redis.hget(sourceId,'name')
 
 def push_result_message(vote_num):
-    answer_variation = redis.hlen('res_'+vote_num)
-    if answer_variation == 0:
+    answer_count = redis.hlen('res_'+vote_num)
+    if answer_count == 0:
         push_all(vote_num,TextSendMessage(text='投票者ゼロでした・・\uD83D\uDE22'))
         return
-    if answer_variation == 1:
+    if answer_count == 1:
         three_str = '該当者なし'
         two_str = '該当者なし'
         data = redis.hkeys('res_'+vote_num)
@@ -258,9 +258,12 @@ def push_result_message(vote_num):
             name = getNameFromNum(vote_num,value)
             if isinstance(name,str):
                 name = name.decode('utf-8')
-        one_str = '全員一致で '+name+' さんでした！'
+        one_str = '全員一致で '+name+' さん（'+str(redis.hget('res_'+vote_num,value))+'票）でした！'
     else :
-        pass
+        result_list = generate_result_list(vote_num)
+        one_str = result_list[0]
+        two_str = result_list[1]
+        three_str = result_list[2]
 
     push_all(vote_num,
         TextSendMessage(text='\uD83C\uDF1F\uD83C\uDF1F結果発表\uD83C\uDF1F\uD83C\uDF1F'))
@@ -277,10 +280,53 @@ def push_result_message(vote_num):
         TextSendMessage(text=two_str))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
-        TextSendMessage(text='1位\uD83C\uDF1Fは・・・・'))
+        TextSendMessage(text='\uD83C\uDF1F1位\uD83C\uDF1Fは・・・・'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
         TextSendMessage(text=one_str))
+
+def generate_result_list(number):
+    result_value_list = redis.hvals('res_'+number)
+    result_value_list.sort()
+    result_value_list.reverse()
+
+    ret_str = []
+    if result_value_list[0] == '1':
+        ret_str.append('全員（それぞれ1票）でした！')
+        ret_str.append('該当者なし')
+        ret_str.append('該当者なし')
+        return ret_str
+    else:
+        max_val = result_value_list[0]
+        added_count = 0
+        loop_count = 0
+        while added_count < 3:
+            elem_str,count = generate_member_list_from_value(hgetall('res_'+number),max_val,number)
+            ret_str.append(elem_str)
+            max_val = result_value_list[count]
+            added_count += count
+            loop_count += 1
+
+        if loop_count = 1:
+            ret_str.append('該当者なし')
+            ret_str.append('該当者なし')
+        elif loop_count == 2:
+            ret_str.append('該当者なし')
+
+        return ret_str
+
+
+def generate_member_list_from_value(result_dict,objvalue,vote_num):
+    sorted_dict = sorted(result_dict.items(), key=lambda x:x[1], reverse=True)
+    count = 0
+    ret_str = u''
+    for key,value in sorted_dict.iteritems():
+        if value == objvalue:
+            ret_str += getNameFromNum(vote_num,key)+'さん '
+            count += 1
+    ret_str += '('+objvalue'票)でした！'
+
+    return (ret_str,count)
 
 def push_all(vote_key,message):
     data = redis.smembers(vote_key)
