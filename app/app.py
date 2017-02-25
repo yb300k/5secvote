@@ -236,7 +236,7 @@ def refresh_board(number):
     push_all(number,generate_planning_poker_message(number))
 
 def getNameFromNum(vote_num,field_num):
-    sourceId = redis.hget(number+'_member',field_num)
+    sourceId = redis.hget(vote_num+'_member',field_num)
     return redis.hget(sourcId,'name')
 
 def push_result_message(vote_num):
