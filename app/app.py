@@ -193,20 +193,20 @@ def handle_text_message(event):
             display_name = getUtfName(profile)
             push_all(current,TextSendMessage(text=display_name + ':' + text))
         elif redis.hget(sourceId,'status') == 'number_wait':
-            if redis.exists(text) == 1:
+            if redis.exists(text) == '1':
                 redis.sadd(text,sourceId)
                 redis.hset(sourceId,'current',text)
                 redis.hdel(sourceId,'status')
                 if redis.hget('status_'+text,'status') is None:
                     push_all(text,TextSendMessage(text='メンバーが増えたので再度投票板を表示します'))
-                    push_all(text,TextSendMessage(text='投票No.'+str(text)+' の参加者（'+ str(redis.scard(text)) +
-                        '人）一覧です\uD83D\uDE04\n'+
+                    push_all(text,TextSendMessage(text='投票No.'+str(number)+' （全参加者'+ str(redis.scard(number)) +
+                        '人）の投票板です\uD83D\uDE04\n'+
                         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
                     push_all(text,generate_planning_poker_message(text))
 
             else:
                 line_bot_api.push_message(
-                    sourceId, TextSendMessage(text='投票No.が見つかりません、再入力おねがいします\uD83D\uDE22'))
+                    sourceId, TextSendMessage(text='参加したい投票No.の再入力おねがいします\uD83D\uDE22'))
 
 def resign_operation(number,sourceId):
     line_bot_api.push_message(
@@ -229,9 +229,9 @@ def refresh_board(number):
         redis.hset(number+'_member',i,value)
         i += 1
 
-    push_all(number,TextSendMessage(text='次いきましょか\uD83D\uDE03 抜ける人は 退出する ボタンを押してね\uD83D\uDE4F'))
-    push_all(number,TextSendMessage(text='投票No.'+str(number)+' の参加者（'+ str(redis.scard(number)) +
-        '人）一覧です\uD83D\uDE04\n'+
+    push_all(number,TextSendMessage(text='もう1回やるよね？\uD83D\uDE03 抜ける人は 退出する ボタンを押してね\uD83D\uDE4F'))
+    push_all(number,TextSendMessage(text='投票No.'+str(number)+' （全参加者'+ str(redis.scard(number)) +
+        '人）の投票板です\uD83D\uDE04\n'+
         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
     push_all(number,generate_planning_poker_message(number))
 
@@ -259,19 +259,19 @@ def push_result_message(vote_num):
     push_all(vote_num,
         TextSendMessage(text='\uD83C\uDF1F\uD83C\uDF1F結果発表\uD83C\uDF1F\uD83C\uDF1F'))
     push_all(vote_num,
-        TextSendMessage(text='3位は'))
+        TextSendMessage(text='3位は・・・'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
         TextSendMessage(text=three_str))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
-        TextSendMessage(text='2位は'))
+        TextSendMessage(text='2位は・・・'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
         TextSendMessage(text=two_str))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
-        TextSendMessage(text='1位は・・・・'))
+        TextSendMessage(text='1位\uD83C\uDF1Fは・・・・'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
         TextSendMessage(text=one_str))
