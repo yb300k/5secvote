@@ -105,23 +105,26 @@ def handle_text_message(event):
     sourceId = getSourceId(event.source)
     matcher = re.match(r'^#(\d+) (.+)', text)
 
-    if text == 'join':#メンバ集め・・・今後要検討
-        join_mutex = Mutex(redis, JOIN_MUTEX_KEY_PREFIX+ sourceId)
-        join_mutex.lock()
-        if join_mutex.is_lock() == False:
-            number = str(redis.get('maxVoteKey')).encode('utf-8')
+    if text == 'join':#メンバ集め
+        number = str(redis.get('maxVoteKey')).encode('utf-8')
+        join_mutex = Mutex(redis, JOIN_MUTEX_KEY_PREFIX+ number)
+        if join_mutex.is_lock():
             redis.sadd(number,sourceId)
             redis.hset(sourceId,'current',number)
         else:
-            number = str(redis.incr('maxVoteKey')).encode('utf-8')
+            join_mutex.lock()
             redis.sadd(number,sourceId)
             redis.hset(sourceId,'current',number)
+
             time.sleep(JOIN_MUTEX_TIMEOUT)
+
             push_all(number,TextSendMessage(text='投票No.'+str(number)+' 参加者（'+ str(redis.scard(number)) +
                 '人）一覧です\uD83D\uDE04（11人目以降は表示されません）\n'+
                 '5秒間投票をスタートするなら 投票開始！ ボタンを押してね\uD83D\uDE03'))
             push_all(number,generate_planning_poker_message(number))
             join_mutex.unlock()
+            redis.incr('maxVoteKey')
+
     elif text == 'add':
         line_bot_api.reply_message(
             event.reply_token, TextSendMessage(text='参加したい投票No.を入力してください\uD83D\uDE03'))
