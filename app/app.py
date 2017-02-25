@@ -237,7 +237,7 @@ def refresh_board(number):
 
 def getNameFromNum(vote_num,field_num):
     sourceId = redis.hget(vote_num+'_member',field_num)
-    return redis.hget(sourcId,'name')
+    return redis.hget(sourceId,'name')
 
 def push_result_message(vote_num):
     answer_variation = redis.hlen('res_'+vote_num)
