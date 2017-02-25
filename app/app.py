@@ -199,7 +199,7 @@ def handle_text_message(event):
                 redis.hdel(sourceId,'status')
                 if redis.hget('status_'+text,'status') is None:
                     push_all(text,TextSendMessage(text='メンバーが増えたので再度投票板を表示します'))
-                    push_all(text,TextSendMessage(text='投票No.'+str(number)+' （全参加者'+ str(redis.scard(number)) +
+                    push_all(text,TextSendMessage(text='投票No.'+str(text)+' （全参加者'+ str(redis.scard(text)) +
                         '人）の投票板です\uD83D\uDE04\n'+
                         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
                     push_all(text,generate_planning_poker_message(text))
