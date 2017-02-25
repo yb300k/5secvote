@@ -145,11 +145,7 @@ def handle_text_message(event):
             return
 
         if value == '11':#退出
-            line_bot_api.push_message(
-                sourceId, TextSendMessage(text='この投票から抜けます。また始めるときは参加！ボタンをみんなと一緒に押してね\uD83D\uDE04\n'))
-            remove_member(number,sourceId)
-            line_bot_api.push_message(
-                sourceId,generateJoinButton())
+            resign_operation(number,sourceId)
             return
 
         status = redis.hget('status_'+number,'status')
@@ -158,7 +154,7 @@ def handle_text_message(event):
             if value == '0':#開始
                 vote_mutex.lock()
                 if vote_mutex.is_lock():
-                    push_all(number,TextSendMessage(text='5秒間投票をはじめます！名前をタップしてね\uD83D\uDE04\n'))
+                    push_all(number,TextSendMessage(text='5秒間投票をはじめます！誰に投票する？\uD83D\uDE04'))
                     redis.hset('status_'+number,'status','inprogress')
                     time.sleep(VOTE_MUTEX_TIMEOUT)
 
@@ -173,18 +169,21 @@ def handle_text_message(event):
                     vote_mutex.unlock()
                     refresh_board(number)
                     return
-                else:
-                    line_bot_api.push_message(
-                        sourceId, TextSendMessage(text='5秒間投票、もうはじまってます。誰かに投票して！\uD83D\uDE04\n'))
             else:
                 line_bot_api.push_message(
-                    sourceId, TextSendMessage(text='投票開始ボタンがまだ押されていないようです'))
+                    sourceId, TextSendMessage(text='投票開始ボタンがまだ押されていないようです\uD83D\uDCA6'))
         else:
             if redis.hget(sourceId,'voted') == 'Y':
                 line_bot_api.push_message(
-                    sourceId, TextSendMessage(text='すでに投票済です・・結果集計まで待ってね\uD83D\uDE04\n'))
+                    sourceId, TextSendMessage(text='すでに投票済です・・結果集計まで待ってね\uD83D\uDE04'))
                 return
+            elif value == '0':
+                line_bot_api.push_message(
+                    sourceId, TextSendMessage(text='もうはじまってるよ、誰かに投票して！\uD83D\uDE04'))
+            elif value == '11':
+                resign_operation(number,sourceId)
             else:
+                #異常値処理省略
                 redis.hincrby('res_' + number, value)
                 redis.hset(sourceId,'voted','Y')
     else:
@@ -209,6 +208,13 @@ def handle_text_message(event):
                 line_bot_api.push_message(
                     sourceId, TextSendMessage(text='投票No.が見つかりません、再入力おねがいします\uD83D\uDE22'))
 
+def resign_operation(number,sourceId):
+    line_bot_api.push_message(
+        sourceId, TextSendMessage(text='この投票から抜けます。また始めるときは参加！ボタンをみんなと一緒に押してね\uD83D\uDE04'))
+    remove_member(number,sourceId)
+    line_bot_api.push_message(
+        sourceId,generateJoinButton())
+
 def remove_member(number,sourceId):
     redis.srem(number,sourceId)
     redis.hset(sourceId,'current','-')
@@ -223,11 +229,15 @@ def refresh_board(number):
         redis.hset(number+'_member',i,value)
         i += 1
 
-    push_all(number,TextSendMessage(text='では次の投票しましょ\uD83D\uDE03\n 抜ける人は退出ボタンを押してね'))
+    push_all(number,TextSendMessage(text='次いきましょか\uD83D\uDE03 抜ける人は 退出する ボタンを押してね\uD83D\uDE4F'))
     push_all(number,TextSendMessage(text='投票No.'+str(number)+' の参加者（'+ str(redis.scard(number)) +
         '人）一覧です\uD83D\uDE04\n'+
         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
     push_all(number,generate_planning_poker_message(number))
+
+def getNameFromNum(vote_num,field_num):
+    sourceId = redis.hget(number+'_member',field_num)
+    return redis.hget(sourcId,'name')
 
 def push_result_message(vote_num):
     answer_variation = redis.hlen('res_'+vote_num)
