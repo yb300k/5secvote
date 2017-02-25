@@ -85,8 +85,8 @@ def handle_follow(event):
     redis.hset(sourceId,'name',display_name)
     redis.hset(sourceId,'pict',picture_url)
 
-    line_bot_api.reply_message(
-        event.reply_token, TextSendMessage(text='こんにちわ\uD83D\uDE04\n'+
+    line_bot_api.push_message(
+        sourceId, TextSendMessage(text='こんにちわ\uD83D\uDE04\n'+
         'みんなでせーのでタイミングを合わせて参加ボタンを押してね\uD83D\uDE03'))
 
     line_bot_api.push_message(
@@ -129,8 +129,8 @@ def handle_text_message(event):
         current = redis.hget(sourceId,'current')
         if current != '-':
             remove_member(current,sourceId)
-        line_bot_api.reply_message(
-            event.reply_token, TextSendMessage(text='参加したい投票No.を入力してください\uD83D\uDE03'))
+        line_bot_api.push_message(
+            sourceId, TextSendMessage(text='参加したい投票No.を入力してください\uD83D\uDE03'))
         redis.hset(sourceId,'status','number_wait')
 
     elif matcher is not None:
@@ -138,15 +138,15 @@ def handle_text_message(event):
         value = matcher.group(2)
         current = redis.hget(sourceId,'current').encode('utf-8')
         if current != number:
-            line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='投票板が古かった？もう一度お願いします！'))
+            line_bot_api.push_message(
+                sourceId, TextSendMessage(text='投票板が古かった？もう一度お願いします！'))
             line_bot_api.push_message(
                 sourceId,generate_planning_poker_message(current))
             return
 
         if value == '11':#退出
-            line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='この投票から抜けます。また始めるときは参加！ボタンをみんなと一緒に押してね\uD83D\uDE04\n'))
+            line_bot_api.push_message(
+                sourceId, TextSendMessage(text='この投票から抜けます。また始めるときは参加！ボタンをみんなと一緒に押してね\uD83D\uDE04\n'))
             remove_member(number,sourceId)
             line_bot_api.push_message(
                 sourceId,generateJoinButton())
