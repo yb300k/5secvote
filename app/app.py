@@ -193,7 +193,7 @@ def handle_text_message(event):
             display_name = getUtfName(profile)
             push_all(current,TextSendMessage(text=display_name + ':' + text))
         elif redis.hget(sourceId,'status') == 'number_wait':
-            if redis.exists(text) == '1':
+            if redis.exists(text) == 1:
                 redis.sadd(text,sourceId)
                 redis.hset(sourceId,'current',text)
                 redis.hdel(sourceId,'status')
