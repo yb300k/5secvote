@@ -257,6 +257,8 @@ def push_result_message(vote_num):
         pass
 
     push_all(vote_num,
+        TextSendMessage(text='\uD83C\uDF1F\uD83C\uDF1F結果発表\uD83C\uDF1F\uD83C\uDF1F'))
+    push_all(vote_num,
         TextSendMessage(text='3位は'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
