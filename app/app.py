@@ -216,9 +216,18 @@ def remove_member(number,sourceId):
     redis.hdel(sourceId,'status')
 
 def refresh_board(number):
+    redis.delete(number+'_member')
     data = redis.smembers(number)
+    i = 1
     for value in data:
+        redis.hset(number+'_member',i,value)
+        i += 1
 
+    push_all(number,TextSendMessage(text='では次の投票しましょ\uD83D\uDE03\n 抜ける人は退出ボタンを押してね'))
+    push_all(number,TextSendMessage(text='投票No.'+str(number)+' の参加者（'+ str(redis.scard(number)) +
+        '人）一覧です\uD83D\uDE04\n'+
+        '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
+    push_all(number,generate_planning_poker_message(number))
 
 def push_result_message(vote_num):
     answer_variation = redis.hlen('res_'+vote_num)
