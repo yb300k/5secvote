@@ -108,21 +108,24 @@ def handle_text_message(event):
     if text == 'join':#メンバ集め・・・今後要検討
         join_mutex = Mutex(redis, JOIN_MUTEX_KEY_PREFIX+ sourceId)
         join_mutex.lock()
-        if join_mutex.is_lock():
+        if join_mutex.is_lock() == False:
             number = str(redis.get('maxVoteKey')).encode('utf-8')
-            if redis.sismember(number,sourceId) == 0:
-                redis.sadd(number,sourceId)
-                redis.hset(sourceId,'current',number)
+            redis.sadd(number,sourceId)
+            redis.hset(sourceId,'current',number)
         else:
             number = str(redis.incr('maxVoteKey')).encode('utf-8')
-            if redis.sismember(number,sourceId) == 0:
-                redis.sadd(number,sourceId)
-                redis.hset(sourceId,'current',number)
+            redis.sadd(number,sourceId)
+            redis.hset(sourceId,'current',number)
             time.sleep(JOIN_MUTEX_TIMEOUT)
+            push_all(number,TextSendMessage(text='投票No.'+str(number)+' 参加者（'+ str(redis.scard(number)) +
+                '人）一覧です\uD83D\uDE04（11人目以降は表示されません）\n'+
+                '5秒間投票をスタートするなら 投票開始！ ボタンを押してね\uD83D\uDE03'))
             push_all(number,generate_planning_poker_message(number))
             join_mutex.unlock()
     elif text == 'add':
-        pass
+        line_bot_api.reply_message(
+            event.reply_token, TextSendMessage(text='参加したい投票No.を入力してください\uD83D\uDE03'))
+        redis.hset(sourceId,'status','number_wait')
 
     elif matcher is not None:
         number = matcher.group(1)
@@ -135,53 +138,75 @@ def handle_text_message(event):
                 sourceId,generate_planning_poker_message(current))
             return
 
-        poker_mutex = Mutex(redis, POKER_MUTEX_KEY_PREFIX+ sourceId)
-        vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + sourceId)
-        if value == '0':#開始
-
-            push_all(number,TextSendMessage(text='投票開始します！名前をタップしてね'))
-            vote_mutex.lock()
-            time.sleep(VOTE_MUTEX_TIMEOUT)
-
-            push_result_message(number)
-            #結果発表後の結果クリア
-            redis.delete(vote_key)
-            member_list = redis.smembers(number)
-            for value in member_list:
-                redis.hset(value,'voted','N')
-
-            vote_mutex.unlock()
-            poker_mutex.release()
-            return
-
         if value == '11':#退出
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='この投票板から抜けます。また始めるときは参加ボタンをみんなと一緒に押してください'))
+                event.reply_token, TextSendMessage(text='この投票板から抜けます。また始めるときは参加ボタンをみんなと一緒に押してね\uD83D\uDE04\n'))
             redis.srem(current,sourceId)
             redis.hset(sourceId,'current','-')
             line_bot_api.push_message(
                 sourceId,generateJoinButton())
             return
 
-        if redis.hget(sourceId,'voted') == 'Y':
-            line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計をお待ちください'))
-            return
+        status = redis.hget('status_'+number,'status')
+        if status is None:
+            vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + number)
+            if value == '0':#開始
+                vote_mutex.lock()
+                if vote_mutex.is_lock():
+                    push_all(number,TextSendMessage(text='5秒間投票をはじめます！名前をタップしてね\uD83D\uDE04\n'))
+                    vote_mutex.lock()
+                    redis.hset('status_'+number,'status','inprogress')
+                    time.sleep(VOTE_MUTEX_TIMEOUT)
 
-        vote_key = 'res_' + number
+                    push_result_message(number)
+                    #結果発表後の結果クリア
+                    redis.delete(vote_key)
+                    member_list = redis.smembers(number)
+                    for value in member_list:
+                        redis.hset(value,'voted','N')
 
-        if vote_mutex.is_lock():
-            redis.hincrby(vote_key, value)
-            redis.hset(sourceId,'voted','Y')
+                    redis.delete('status_'+number)
+                    vote_mutex.unlock()
+                    return
+                else:
+                    line_bot_api.reply_message(
+                        event.reply_token, TextSendMessage(text='5秒間投票、もうはじまってます！誰かに投票して！\uD83D\uDE04\n'))
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text='投票開始ボタンがまだ押されていないようです'))
+
         else:
-            line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='投票開始ボタンをまだ誰も押してないようです'))
+            if redis.hget(sourceId,'voted') == 'Y':
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計まで待ってね\uD83D\uDE04\n'))
+                return
+            else:
+                vote_key = 'res_' + number
+                redis.hincrby(vote_key, value)
+                redis.hset(sourceId,'voted','Y')
+
     else:
         current = redis.hget(sourceId,'current').encode('utf-8')
         if current != '-':
             profile = line_bot_api.get_profile(sourceId)
             display_name = getUtfName(profile)
             push_all(current,TextSendMessage(text=display_name + ':' + text))
+        elif redis.hget(sourceId,'status') == 'number_wait':
+            if redis.exists(text) == 1:
+                redis.sadd(text,sourceId)
+                redis.hset(sourceId,'current',text)
+                redis.hdel(sourceId,'status')
+                if redis.hget('status_'+text,'status') is None:
+                    push_all(text,TextSendMessage(text='メンバーが増えたので再度投票板を表示します'))
+                    push_all(text,TextSendMessage(text='投票No.'+str(text)+' 参加者（'+ str(redis.scard(text)) +
+                        '人）一覧です\uD83D\uDE04（11人目以降は表示されません）\n'+
+                        '5秒間投票をスタートするなら 投票開始！ ボタンを押してね\uD83D\uDE03'))
+                    push_all(text,generate_planning_poker_message(text))
+
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text='投票No.が見つかりません、確認おねがいします\uD83D\uDE22'))
+
 
 def push_result_message(vote_num):
     answer_variation = redis.hlen('res_'+vote_num)
