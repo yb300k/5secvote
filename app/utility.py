@@ -52,15 +52,13 @@ entry = {
 
 def generate_voting_target_image(number,data):
 
-    i = 1
-    for value in data:
+    for key,value in data.iteritems():
         display_name = redis.hget(value,'name')
-        path = os.path.join(TMP_ROOT_PATH,str(i)+'.png')
+        path = os.path.join(TMP_ROOT_PATH,str(key)+'.png')
         cmd = _letter2img_cmd(display_name,path)
         os.system(cmd)
         cmd = _compose_cmd(path)
         os.system(cmd)
-        i += 1
 
     path = os.path.join(TMP_ROOT_PATH, number)
     make_static_dir(path)

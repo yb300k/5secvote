@@ -38,7 +38,6 @@ app.logger.addHandler(stream_handler)
 app.logger.setLevel(app.config['LOG_LEVEL'])
 line_bot_api = LineBotApi(app.config['CHANNEL_ACCESS_TOKEN'])
 handler = WebhookHandler(app.config['CHANNEL_SECRET'])
-mapping = {"0":"0", "1":"1", "2":"2", "3":"3", "4":"5", "5":"8", "6":"13", "7":"20", "8":"40", "9":"?", "10":"∞", "11":"Soy"}
 
 @app.route('/callback', methods=['POST'])
 def callback():
@@ -97,6 +96,9 @@ def handle_follow(event):
 def handle_unfollow(event):
     sourceId = getSourceId(event.source)
     redis.hset(sourceId,'voted','N')
+    current = redis.hget(sourceId,'current')
+    if current != '-':
+        remove_member(current,sourceId)
     redis.hset(sourceId,'current','-')
 
 @handler.add(MessageEvent, message=TextMessage)
@@ -108,24 +110,25 @@ def handle_text_message(event):
     if text == 'join':#メンバ集め
         number = str(redis.get('maxVoteKey')).encode('utf-8')
         join_mutex = Mutex(redis, JOIN_MUTEX_KEY_PREFIX+ number)
-        if join_mutex.is_lock():
-            redis.sadd(number,sourceId)
-            redis.hset(sourceId,'current',number)
-        else:
-            join_mutex.lock()
-            redis.sadd(number,sourceId)
-            redis.hset(sourceId,'current',number)
+        join_mutex.lock()
+        redis.sadd(number,sourceId)
+        redis.hset(number+'_member',redis.scard(number),sourceId)
+        redis.hset(sourceId,'current',number)
 
+        if join_mutex.is_lock():
             time.sleep(JOIN_MUTEX_TIMEOUT)
 
-            push_all(number,TextSendMessage(text='投票No.'+str(number)+' 参加者（'+ str(redis.scard(number)) +
-                '人）一覧です\uD83D\uDE04（11人目以降は表示されません）\n'+
-                '5秒間投票をスタートするなら 投票開始！ ボタンを押してね\uD83D\uDE03'))
+            push_all(number,TextSendMessage(text='投票No.'+str(number)+' （全参加者'+ str(redis.scard(number)) +
+                '人）の投票板です\uD83D\uDE04\n'+
+                '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
             push_all(number,generate_planning_poker_message(number))
             join_mutex.unlock()
             redis.incr('maxVoteKey')
 
     elif text == 'add':
+        current = redis.hget(sourceId,'current')
+        if current != '-':
+            remove_member(current,sourceId)
         line_bot_api.reply_message(
             event.reply_token, TextSendMessage(text='参加したい投票No.を入力してください\uD83D\uDE03'))
         redis.hset(sourceId,'status','number_wait')
@@ -143,51 +146,47 @@ def handle_text_message(event):
 
         if value == '11':#退出
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text='この投票板から抜けます。また始めるときは参加ボタンをみんなと一緒に押してね\uD83D\uDE04\n'))
-            redis.srem(current,sourceId)
-            redis.hset(sourceId,'current','-')
+                event.reply_token, TextSendMessage(text='この投票から抜けます。また始めるときは参加！ボタンをみんなと一緒に押してね\uD83D\uDE04\n'))
+            remove_member(number,sourceId)
             line_bot_api.push_message(
                 sourceId,generateJoinButton())
             return
 
         status = redis.hget('status_'+number,'status')
         if status is None:
-            vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX  + number)
+            vote_mutex = Mutex(redis, VOTE_MUTEX_KEY_PREFIX + number)
             if value == '0':#開始
                 vote_mutex.lock()
                 if vote_mutex.is_lock():
                     push_all(number,TextSendMessage(text='5秒間投票をはじめます！名前をタップしてね\uD83D\uDE04\n'))
-                    vote_mutex.lock()
                     redis.hset('status_'+number,'status','inprogress')
                     time.sleep(VOTE_MUTEX_TIMEOUT)
 
                     push_result_message(number)
                     #結果発表後の結果クリア
-                    redis.delete(vote_key)
+                    redis.delete('res_' + number)
                     member_list = redis.smembers(number)
-                    for value in member_list:
-                        redis.hset(value,'voted','N')
+                    for memberid in member_list:
+                        redis.hset(memberid,'voted','N')
 
                     redis.delete('status_'+number)
                     vote_mutex.unlock()
+                    refresh_board(number)
                     return
                 else:
                     line_bot_api.reply_message(
-                        event.reply_token, TextSendMessage(text='5秒間投票、もうはじまってます！誰かに投票して！\uD83D\uDE04\n'))
+                        event.reply_token, TextSendMessage(text='5秒間投票、もうはじまってます。誰かに投票して！\uD83D\uDE04\n'))
             else:
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text='投票開始ボタンがまだ押されていないようです'))
-
         else:
             if redis.hget(sourceId,'voted') == 'Y':
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計まで待ってね\uD83D\uDE04\n'))
                 return
             else:
-                vote_key = 'res_' + number
-                redis.hincrby(vote_key, value)
+                redis.hincrby('res_' + number, value)
                 redis.hset(sourceId,'voted','Y')
-
     else:
         current = redis.hget(sourceId,'current').encode('utf-8')
         if current != '-':
@@ -201,14 +200,24 @@ def handle_text_message(event):
                 redis.hdel(sourceId,'status')
                 if redis.hget('status_'+text,'status') is None:
                     push_all(text,TextSendMessage(text='メンバーが増えたので再度投票板を表示します'))
-                    push_all(text,TextSendMessage(text='投票No.'+str(text)+' 参加者（'+ str(redis.scard(text)) +
-                        '人）一覧です\uD83D\uDE04（11人目以降は表示されません）\n'+
-                        '5秒間投票をスタートするなら 投票開始！ ボタンを押してね\uD83D\uDE03'))
+                    push_all(text,TextSendMessage(text='投票No.'+str(text)+' の参加者（'+ str(redis.scard(text)) +
+                        '人）一覧です\uD83D\uDE04\n'+
+                        '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
                     push_all(text,generate_planning_poker_message(text))
 
             else:
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text='投票No.が見つかりません、確認おねがいします\uD83D\uDE22'))
+
+def remove_member(number,sourceId):
+    redis.srem(number,sourceId)
+    redis.hset(sourceId,'current','-')
+    redis.hset(sourceId,'voted','N')
+    redis.hdel(sourceId,'status')
+
+def refresh_board(number):
+    data = redis.smembers(number)
+    for value in data:
 
 
 def push_result_message(vote_num):
@@ -260,37 +269,21 @@ def generateJoinButton():
     actions.append(MessageImagemapAction(
         text = 'join',
         area=ImagemapArea(
-            x=0,
-            y=0,
+            x=0, y=0,
             width = BUTTON_ELEMENT_WIDTH,
             height = BUTTON_ELEMENT_HEIGHT)))
     actions.append(MessageImagemapAction(
         text = 'add',
         area=ImagemapArea(
-            x=BUTTON_ELEMENT_WIDTH,
-            y=0,
+            x=BUTTON_ELEMENT_WIDTH, y=0,
             width = BUTTON_ELEMENT_WIDTH * 2,
             height = BUTTON_ELEMENT_HEIGHT)))
     message.actions = actions
     return message
 
-def genenate_voting_result_message(key):
-    data = redis.hgetall(key)
-    tmp = generate_voting_result_image(data)
-    buttons_template = ButtonsTemplate(
-        title='ポーカー結果',
-        text='そろいましたか？',
-        thumbnail_image_url=HEROKU_SERVER_URL + 'images/tmp/' + tmp + '/result_11.png',
-        actions=[
-            MessageTemplateAction(label='もう１回', text='プラポ')
-    ])
-    template_message = TemplateSendMessage(
-        alt_text='結果', template=buttons_template)
-    return template_message
-
 def generate_planning_poker_message(number):
     app.logger.info('[number] :' + number)
-    data = redis.smembers(number)
+    data = redis.hgetall(number+'_member')
     generate_voting_target_image(number,data)
 
     count = len(data)
