@@ -307,7 +307,7 @@ def generate_result_list(number):
             added_count += count
             loop_count += 1
 
-        if loop_count = 1:
+        if loop_count == 1:
             ret_str.append('該当者なし')
             ret_str.append('該当者なし')
         elif loop_count == 2:
