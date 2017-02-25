@@ -174,15 +174,15 @@ def handle_text_message(event):
                     refresh_board(number)
                     return
                 else:
-                    line_bot_api.reply_message(
-                        event.reply_token, TextSendMessage(text='5秒間投票、もうはじまってます。誰かに投票して！\uD83D\uDE04\n'))
+                    line_bot_api.push_message(
+                        sourceId, TextSendMessage(text='5秒間投票、もうはじまってます。誰かに投票して！\uD83D\uDE04\n'))
             else:
-                line_bot_api.reply_message(
-                    event.reply_token, TextSendMessage(text='投票開始ボタンがまだ押されていないようです'))
+                line_bot_api.push_message(
+                    sourceId, TextSendMessage(text='投票開始ボタンがまだ押されていないようです'))
         else:
             if redis.hget(sourceId,'voted') == 'Y':
-                line_bot_api.reply_message(
-                    event.reply_token, TextSendMessage(text='すでに投票済です・・結果集計まで待ってね\uD83D\uDE04\n'))
+                line_bot_api.push_message(
+                    sourceId, TextSendMessage(text='すでに投票済です・・結果集計まで待ってね\uD83D\uDE04\n'))
                 return
             else:
                 redis.hincrby('res_' + number, value)
@@ -206,8 +206,8 @@ def handle_text_message(event):
                     push_all(text,generate_planning_poker_message(text))
 
             else:
-                line_bot_api.reply_message(
-                    event.reply_token, TextSendMessage(text='投票No.が見つかりません、確認おねがいします\uD83D\uDE22'))
+                line_bot_api.push_message(
+                    sourceId, TextSendMessage(text='投票No.が見つかりません、再入力おねがいします\uD83D\uDE22'))
 
 def remove_member(number,sourceId):
     redis.srem(number,sourceId)

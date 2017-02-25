@@ -21,7 +21,6 @@ class Mutex(object):
         return self._lock
 
     def lock(self):
-        self.isInitial = False
         if self._lock:
             raise DuplicateLockError()
 
