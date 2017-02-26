@@ -156,7 +156,9 @@ def handle_text_message(event):
                 if vote_mutex.is_lock():
                     push_all(number,TextSendMessage(text='5秒間投票をはじめます！名前をタップして投票してね\uD83D\uDE04'))
                     redis.hset('status_'+number,'status','inprogress')
-                    time.sleep(VOTE_MUTEX_TIMEOUT)
+                    time.sleep(2)
+                    push_all(number,TextSendMessage(text='あと3秒！'))
+                    time.sleep(3)
 
                     push_result_message(number)
                     #結果発表後の結果クリア
