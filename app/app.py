@@ -260,7 +260,7 @@ def push_result_message(vote_num):
     data = redis.hvals('res_'+vote_num)
     answer_count = 0
     for value in data:
-        answer_count += (int)value
+        answer_count += value
     member_count = redis.scard(vote_num)
     if member_count > answer_count:
         push_all(vote_num,TextSendMessage(text='（棄権' + member_count - answer_count + '人）'))
