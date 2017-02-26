@@ -254,8 +254,17 @@ def getNameFromNum(vote_num,field_pos):
 def push_result_message(vote_num):
     answer_count = redis.hlen('res_'+vote_num)
     if answer_count == 0:
-        push_all(vote_num,TextSendMessage(text='投票者ゼロでした・・\uD83D\uDE22'))
+        push_all(vote_num,TextSendMessage(text='投票者ゼロでした\uD83D\uDE22'))
         return
+
+    data = redis.hvals('res_'+vote_num)
+    answer_count = 0
+    for value in data:
+        answer_count += (int)value
+    member_count = redis.scard(vote_num)
+    if member_count > answer_count:
+        push_all(vote_num,TextSendMessage(text='（棄権' + member_count - answer_count + '人）'))
+
     if answer_count == 1:
         three_str = '該当者なし'
         two_str = '該当者なし'
@@ -296,30 +305,24 @@ def generate_result_list(number):
     result_value_list.sort()
     result_value_list.reverse()
 
+    max_val = result_value_list[0]
     ret_str = []
-    if result_value_list[0] == '1':
-        ret_str.append('全員（それぞれ1票）でした！')
+    added_count = 0
+    loop_count = 0
+    while added_count < 3:
+        elem_str,count = generate_member_list_from_value(hgetall('res_'+number),max_val,number)
+        ret_str.append(elem_str)
+        max_val = result_value_list[count]
+        added_count += count
+        loop_count += 1
+
+    if loop_count == 1:
         ret_str.append('該当者なし')
         ret_str.append('該当者なし')
-        return ret_str
-    else:
-        max_val = result_value_list[0]
-        added_count = 0
-        loop_count = 0
-        while added_count < 3:
-            elem_str,count = generate_member_list_from_value(hgetall('res_'+number),max_val,number)
-            ret_str.append(elem_str)
-            max_val = result_value_list[count]
-            added_count += count
-            loop_count += 1
+    elif loop_count == 2:
+        ret_str.append('該当者なし')
 
-        if loop_count == 1:
-            ret_str.append('該当者なし')
-            ret_str.append('該当者なし')
-        elif loop_count == 2:
-            ret_str.append('該当者なし')
-
-        return ret_str
+    return ret_str
 
 
 def generate_member_list_from_value(result_dict,objvalue,vote_num):
