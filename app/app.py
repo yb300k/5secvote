@@ -313,7 +313,7 @@ def generate_result_list(number):
     added_count = 0
     loop_count = 0
     while added_count < 3:
-        elem_str,count = generate_member_list_from_value(hgetall('res_'+number),max_val,number)
+        elem_str,count = generate_member_list_from_value(redis.hgetall('res_'+number),max_val,number)
         ret_str.append(elem_str)
         max_val = result_value_list[count]
         added_count += count
