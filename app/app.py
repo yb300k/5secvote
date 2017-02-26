@@ -159,6 +159,8 @@ def handle_text_message(event):
                     time.sleep(2)
                     push_all(number,TextSendMessage(text='あと3秒！'))
                     time.sleep(3)
+                    push_all(number,TextSendMessage(text='－\uD83D\uDD52投票終了\uD83D\uDD52－'))
+                    time.sleep(1)
 
                     push_result_message(number)
                     #結果発表後の結果クリア
@@ -260,7 +262,8 @@ def push_result_message(vote_num):
     data = redis.hvals('res_'+vote_num)
     answer_count = 0
     for value in data:
-        answer_count += value
+        answer_count += int(value)
+
     member_count = redis.scard(vote_num)
     if member_count > answer_count:
         push_all(vote_num,TextSendMessage(text='（棄権' + member_count - answer_count + '人）'))
