@@ -224,7 +224,12 @@ def resign_operation(number,sourceId):
         sourceId,generateJoinButton())
 
 def remove_member(number,sourceId):
-    redis.srem(number,sourceId)
+    if redis.scard(number) == 1:
+        redis.srem(number,sourceId)
+        redis.delete(number+'_member')
+    else:
+        redis.srem(number,sourceId)
+
     redis.hset(sourceId,'current','-')
     redis.hset(sourceId,'voted','N')
     redis.hdel(sourceId,'status')
