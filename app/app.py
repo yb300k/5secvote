@@ -189,10 +189,9 @@ def handle_text_message(event):
                 redis.hincrby('res_' + number, value)
                 redis.hset(sourceId,'voted','Y')
     else:
-        current = redis.hget(sourceId,'current').encode('utf-8')
-        if current != '-':
-            profile = line_bot_api.get_profile(sourceId)
-            display_name = getUtfName(profile)
+        current = redis.hget(sourceId,'current')
+        if current is not None and current != '-':
+            display_name = getUtfName(line_bot_api.get_profile(sourceId))
             push_all(current,TextSendMessage(text=display_name + ':' + text))
         elif redis.hget(sourceId,'status') == 'number_wait':
             if text == '0':
