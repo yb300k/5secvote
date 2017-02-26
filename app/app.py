@@ -160,17 +160,15 @@ def handle_text_message(event):
                     push_all(number,TextSendMessage(text='あと3秒！'))
                     time.sleep(3)
                     push_all(number,TextSendMessage(text='－\uD83D\uDD52投票終了\uD83D\uDD52－'))
-                    time.sleep(1)
-
-                    push_result_message(number)
-                    #結果発表後の結果クリア
-                    redis.delete('res_' + number)
+                    vote_mutex.unlock()
+                    redis.delete('status_'+number)
                     member_list = redis.smembers(number)
                     for memberid in member_list:
                         redis.hset(memberid,'voted','N')
 
-                    redis.delete('status_'+number)
-                    vote_mutex.unlock()
+                    push_result_message(number)
+                    #結果発表後の結果クリア
+                    redis.delete('res_' + number)
                     refresh_board(number)
                     return
             else:
@@ -332,7 +330,7 @@ def generate_member_list_from_value(result_dict,objvalue,vote_num):
     sorted_dict = sorted(result_dict.items(), key=lambda x:x[1], reverse=True)
     count = 0
     ret_str = u''
-    for key,value in sorted_dict.iteritems():
+    for key,value in sorted_dict:
         if value == objvalue:
             ret_str += getNameFromNum(vote_num,key)+'さん '
             count += 1
