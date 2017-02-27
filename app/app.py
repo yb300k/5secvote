@@ -376,7 +376,7 @@ def generateJoinButton():
 def generate_planning_poker_message(number):
     app.logger.info('[number] :' + number)
     data = redis.hgetall(number+'_member')
-    generate_voting_target_image(number,data)
+    tmpnum = generate_voting_target_image(number,data)
 
     count = len(data)
     if count < 3:
@@ -390,7 +390,7 @@ def generate_planning_poker_message(number):
         row_count = 3
 
     message = ImagemapSendMessage(
-        base_url= HEROKU_SERVER_URL + 'images/tmp/' + number,
+        base_url= HEROKU_SERVER_URL + 'images/tmp/' + tmpnum,
         alt_text='vote board',
         base_size=BaseSize(height=vote_height, width=1040))
     actions=[]
