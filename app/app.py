@@ -60,8 +60,8 @@ def download_imageam(size):
 @app.route('/images/tmp/<number>/<size>', methods=['GET'])
 def download_vote(number, size):
     filename = 'vote-' + size + '.png'
-    adjusted_number = get_version_of_board(number)
-    return send_from_directory(os.path.join(app.root_path, 'static', 'tmp', adjusted_number), filename)
+    
+    return send_from_directory(os.path.join(app.root_path, 'static', 'tmp', number), filename)
 
 
 @app.route('/images/planning_poker/<size>', methods=['GET'])
