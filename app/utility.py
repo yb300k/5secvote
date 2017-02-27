@@ -60,10 +60,7 @@ def generate_voting_target_image(number,data):
         cmd = _compose_cmd(path)
         os.system(cmd)
 
-    adjusted_number = add_version_to_number(number)
-
-    path = os.path.join(TMP_ROOT_PATH, adjusted_number)
-    make_static_dir(path)
+    number, path = _tmpdir()
 
     cmd = _montage_cmd(path,len(data))
     os.system(cmd)
