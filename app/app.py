@@ -203,9 +203,10 @@ def handle_text_message(event):
             elif redis.exists(text) == 1:
                 redis.hdel(sourceId,'status')
                 redis.sadd(text,sourceId)
-                redis.hset(text+'_member',redis.scard(text),sourceId)
+                
                 redis.hset(sourceId,'current',text)
                 if redis.hget('status_'+text,'status') is None:
+                    redis.hset(text+'_member',redis.scard(text),sourceId)
                     push_all(text,TextSendMessage(text='メンバーが増えたので再度投票板を表示します'))
                     push_all(text,TextSendMessage(text='投票No.'+str(text)+' （全参加者'+ str(redis.scard(text)) +
                         '人）の投票板です\uD83D\uDE04\n'+
