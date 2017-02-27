@@ -119,7 +119,7 @@ def handle_text_message(event):
         if join_mutex.is_lock():
             time.sleep(JOIN_MUTEX_TIMEOUT)
 
-            push_all(number,TextSendMessage(text='投票No.'+str(number)+' （全参加者'+ str(redis.scard(number)) +
+            push_all(number,TextSendMessage(text='投票No.'+str(number)+' （参加者'+ str(redis.scard(number)) +
                 '人）の投票板です\uD83D\uDE04\n'+
                 '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
             push_all(number,generate_planning_poker_message(number))
@@ -209,7 +209,7 @@ def handle_text_message(event):
                 if redis.hget('status_'+text,'status') is None:
                     redis.hset(text+'_member',redis.scard(text),sourceId)
                     push_all(text,TextSendMessage(text='メンバーが増えたので再度投票板を表示します'))
-                    push_all(text,TextSendMessage(text='投票No.'+str(text)+' （全参加者'+ str(redis.scard(text)) +
+                    push_all(text,TextSendMessage(text='投票No.'+str(text)+' （参加者'+ str(redis.scard(text)) +
                         '人）の投票板です\uD83D\uDE04\n'+
                         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
                     push_all(text,generate_planning_poker_message(text))
@@ -247,7 +247,7 @@ def refresh_board(number):
         i += 1
 
     push_all(number,TextSendMessage(text='もう1回やる？\uD83D\uDE03 抜ける人は 退出する ボタンを押してね\uD83D\uDE4F'))
-    push_all(number,TextSendMessage(text='投票No.'+str(number)+' （全参加者'+ str(redis.scard(number)) +
+    push_all(number,TextSendMessage(text='投票No.'+str(number)+' （参加者'+ str(redis.scard(number)) +
         '人）の投票板です\uD83D\uDE04\n'+
         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
     push_all(number,generate_planning_poker_message(number))
