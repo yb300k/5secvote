@@ -204,7 +204,7 @@ def handle_text_message(event):
             elif redis.exists(text) == 1:
                 redis.hdel(sourceId,'status')
                 redis.sadd(text,sourceId)
-                redis.hset('boardVersion',number+'_needIncr','Y')
+                redis.hset('boardVersion',text+'_needIncr','Y')
                 redis.hset(sourceId,'current',text)
                 if redis.hget('status_'+text,'status') is None:
                     redis.hset(text+'_member',redis.scard(text),sourceId)
