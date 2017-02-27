@@ -269,7 +269,7 @@ def push_result_message(vote_num):
 
     member_count = redis.scard(vote_num)
     if member_count > answer_count:
-        push_all(vote_num,TextSendMessage(text='（棄権' + member_count - answer_count + '人）'))
+        push_all(vote_num,TextSendMessage(text='（棄権' + str(member_count - answer_count) + '人）'))
 
     if answer_count == 1:
         three_str = '該当者なし'
