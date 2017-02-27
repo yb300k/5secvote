@@ -155,7 +155,7 @@ def handle_text_message(event):
             if value == '0':#開始
                 vote_mutex.lock()
                 if vote_mutex.is_lock():
-                    push_all(number,TextSendMessage(text='5秒間投票\uD83D\uDD52をはじめます！名前をタップして投票どうぞ\u2755'))
+                    push_all(number,TextSendMessage(text='5秒間投票をはじめます\uD83D\uDD52名前をタップして投票どうぞ\u2755'))
                     redis.hset('status_'+number,'status','inprogress')
                     time.sleep(2)
                     push_all(number,TextSendMessage(text='あと3秒！'))
