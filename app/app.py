@@ -60,7 +60,8 @@ def download_imageam(size):
 @app.route('/images/tmp/<number>/<size>', methods=['GET'])
 def download_vote(number, size):
     filename = 'vote-' + size + '.png'
-    return send_from_directory(os.path.join(app.root_path, 'static', 'tmp', number), filename)
+    adjusted_number = get_version_of_board(number)
+    return send_from_directory(os.path.join(app.root_path, 'static', 'tmp', adjusted_number), filename)
 
 
 @app.route('/images/planning_poker/<size>', methods=['GET'])
@@ -154,7 +155,7 @@ def handle_text_message(event):
             if value == '0':#開始
                 vote_mutex.lock()
                 if vote_mutex.is_lock():
-                    push_all(number,TextSendMessage(text='5秒間投票をはじめます！名前をタップして投票してね\uD83D\uDE04'))
+                    push_all(number,TextSendMessage(text='5秒間投票\uD83D\uDD52をはじめます！名前をタップして投票どうぞ\u2755'))
                     redis.hset('status_'+number,'status','inprogress')
                     time.sleep(2)
                     push_all(number,TextSendMessage(text='あと3秒！'))
@@ -203,7 +204,7 @@ def handle_text_message(event):
             elif redis.exists(text) == 1:
                 redis.hdel(sourceId,'status')
                 redis.sadd(text,sourceId)
-                
+                redis.hset('boardVersion',number+'_needIncr','Y')
                 redis.hset(sourceId,'current',text)
                 if redis.hget('status_'+text,'status') is None:
                     redis.hset(text+'_member',redis.scard(text),sourceId)
@@ -227,8 +228,11 @@ def remove_member(number,sourceId):
     if redis.scard(number) == 1:
         redis.srem(number,sourceId)
         redis.delete(number+'_member')
+        redis.hdel('boardVersion',number+'_needIncr')
+        redis.hdel('boardVersion',number)
     else:
         redis.srem(number,sourceId)
+        redis.hset('boardVersion',number+'_needIncr','Y')
 
     redis.hset(sourceId,'current','-')
     redis.hset(sourceId,'voted','N')

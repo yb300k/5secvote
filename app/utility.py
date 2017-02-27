@@ -60,7 +60,9 @@ def generate_voting_target_image(number,data):
         cmd = _compose_cmd(path)
         os.system(cmd)
 
-    path = os.path.join(TMP_ROOT_PATH, number)
+    adjusted_number = add_version_to_number(number)
+
+    path = os.path.join(TMP_ROOT_PATH, adjusted_number)
     make_static_dir(path)
 
     cmd = _montage_cmd(path,len(data))
@@ -71,6 +73,21 @@ def generate_voting_target_image(number,data):
         os.system(resize_cmd)
     return number
 
+def add_version_to_number(number):
+    need_update = redis.hget('boardVersion',number+'_needIncr')
+    if need_update is None:
+        return number
+    else:
+        redis.hincrby('boardVersion',number)
+        redis.hdel('boardVersion',number+'_needIncr')
+        return number + '_' + redis.hget('boardVersion',number)
+
+def get_version_of_board(number):
+    version = redis.hget('boardVersion',number)
+    if version is None:
+        return number
+    else:
+        return number + '_' + redis.hget('boardVersion',number)
 
 def _letter2img_cmd(letters,out_file):
     font_file = os.path.join(TMP_ROOT_PATH,FONT_FILENAME)
@@ -125,7 +142,7 @@ def _resize_cmd(path, size):
     cmd.append(str(size) + 'x')
     cmd.append(before)
     cmd.append('-quality 00')
-#    cmd.append('-colors 8')
+    cmd.append('-colors 64')
     cmd.append(after)
     return ' '.join(cmd)
 
