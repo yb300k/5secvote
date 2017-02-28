@@ -60,7 +60,7 @@ def download_imageam(size):
 @app.route('/images/tmp/<number>/<size>', methods=['GET'])
 def download_vote(number, size):
     filename = 'vote-' + size + '.png'
-    
+
     return send_from_directory(os.path.join(app.root_path, 'static', 'tmp', number), filename)
 
 
@@ -89,6 +89,8 @@ def handle_follow(event):
     line_bot_api.push_message(
         sourceId, TextSendMessage(text='こんにちわ\uD83D\uDE04\n'+
         'みんなでせーのでタイミングを合わせて参加ボタンを押してね\uD83D\uDE03'))
+    line_bot_api.push_message(
+        sourceId, TextSendMessage(text='みんな揃ったら何を聞くか決めてね（例：今日のMVP）\uD83D\uDE04投票開始≫ボタンを押すと5秒間投票開始です！'))
 
     line_bot_api.push_message(
         sourceId,generateJoinButton())
@@ -193,7 +195,7 @@ def handle_text_message(event):
         current = redis.hget(sourceId,'current')
         if current is not None and current != '-':
             display_name = getUtfName(line_bot_api.get_profile(sourceId))
-            push_all(current,TextSendMessage(text=display_name + ':' + text))
+            push_all_except_me(current,sourceId,TextSendMessage(text=display_name + ':' + text))
         elif redis.hget(sourceId,'status') == 'number_wait':
             if text == '0':
                 redis.hdel(sourceId,'status')
@@ -204,7 +206,6 @@ def handle_text_message(event):
             elif redis.exists(text) == 1:
                 redis.hdel(sourceId,'status')
                 redis.sadd(text,sourceId)
-                redis.hset('boardVersion',text+'_needIncr','Y')
                 redis.hset(sourceId,'current',text)
                 if redis.hget('status_'+text,'status') is None:
                     redis.hset(text+'_member',redis.scard(text),sourceId)
@@ -228,10 +229,9 @@ def remove_member(number,sourceId):
     if redis.scard(number) == 1:
         redis.srem(number,sourceId)
         redis.delete(number+'_member')
-        
+
     else:
         redis.srem(number,sourceId)
-        
 
     redis.hset(sourceId,'current','-')
     redis.hset(sourceId,'voted','N')
@@ -246,7 +246,7 @@ def refresh_board(number):
         i += 1
 
     push_all(number,TextSendMessage(text='もう1回やる？\uD83D\uDE03 抜ける人は 退出する ボタンを押してね\uD83D\uDE4F'))
-    push_all(number,TextSendMessage(text='投票No.'+str(number)+' （参加者'+ str(redis.scard(number)) +
+    push_all(number,TextSendMessage(text='投票No.'+ str(number) +' （参加者'+ str(redis.scard(number)) +
         '人）の投票板です\uD83D\uDE04\n'+
         '5秒間投票をスタートするなら 投票開始≫ ボタンを押してね\uD83D\uDE03'))
     push_all(number,generate_planning_poker_message(number))
@@ -256,6 +256,9 @@ def getNameFromNum(vote_num,field_pos):
     return redis.hget(sourceId,'name')
 
 def push_result_message(vote_num):
+    push_all(vote_num,
+        TextSendMessage(text='\uD83C\uDF1F\uD83C\uDF1F結果発表\uD83C\uDF1F\uD83C\uDF1F'))
+
     answer_count = redis.hlen('res_'+vote_num)
     if answer_count == 0:
         push_all(vote_num,TextSendMessage(text='投票者ゼロでした\uD83D\uDE22'))
@@ -286,8 +289,6 @@ def push_result_message(vote_num):
         three_str = result_list[2]
 
     push_all(vote_num,
-        TextSendMessage(text='\uD83C\uDF1F\uD83C\uDF1F結果発表\uD83C\uDF1F\uD83C\uDF1F'))
-    push_all(vote_num,
         TextSendMessage(text='3位は・・・'))
     time.sleep(RESULT_DISPLAY_TIMEOUT)
     push_all(vote_num,
@@ -317,7 +318,7 @@ def generate_result_list(number):
     while added_count < 3:
         elem_str,count = generate_member_list_from_value(redis.hgetall('res_'+number),max_val,number)
         ret_str.append(elem_str)
-        
+
         added_count += count
         loop_count += 1
         if count < len(result_value_list):
@@ -342,7 +343,7 @@ def generate_member_list_from_value(result_dict,objvalue,vote_num):
         if value == objvalue:
             ret_str += getNameFromNum(vote_num,key)+'さん '
             count += 1
-    ret_str += '(' + str(count) + '票)でした！'
+    ret_str += '(' + str(objvalue) + '票)でした！'
 
     return (ret_str,count)
 
@@ -350,6 +351,12 @@ def push_all(vote_key,message):
     data = redis.smembers(vote_key)
     for value in data:
         line_bot_api.push_message(value,message)
+
+def push_all_except_me(vote_key,myId,message):
+    data = redis.smembers(vote_key)
+    for value in data:
+        if value != myId:
+            line_bot_api.push_message(value,message)
 
 def generateJoinButton():
     message = ImagemapSendMessage(
