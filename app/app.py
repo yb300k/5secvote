@@ -343,7 +343,7 @@ def generate_member_list_from_value(result_dict,objvalue,vote_num):
         if value == objvalue:
             ret_str += getNameFromNum(vote_num,key)+'さん '
             count += 1
-    ret_str += '(' + count + '票)でした！'
+    ret_str += '(' + str(count) + '票)でした！'
 
     return (ret_str,count)
 
