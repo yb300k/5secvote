@@ -229,7 +229,6 @@ def remove_member(number,sourceId):
     if redis.scard(number) == 1:
         redis.srem(number,sourceId)
         redis.delete(number+'_member')
-
     else:
         redis.srem(number,sourceId)
 
@@ -275,23 +274,10 @@ def push_result_message(vote_num):
         nonvote = member_count - answer_count
         push_all(vote_num,TextSendMessage(text='（棄権' + str(nonvote) + '人）'))
 
-    if answer_count == 1:
-        three_str = '該当者なし'
-        two_str = '該当者なし'
-        data = redis.hkeys('res_'+vote_num)
-        for value in data:
-            name = getNameFromNum(vote_num,value)
-            if isinstance(name,str):
-                name = name.decode('utf-8')
-        if nonvote == 0:
-            one_str = '全員一致で '+ name + ' さん（'+str(redis.hget('res_'+vote_num,value))+'票）でした！'
-        else:
-            one_str = name+' さん（'+str(redis.hget('res_'+vote_num,value))+'票）でした！'
-    else :
-        result_list = generate_result_list(vote_num)
-        one_str = result_list[0]
-        two_str = result_list[1]
-        three_str = result_list[2]
+    result_list = generate_result_list(vote_num)
+    one_str = result_list[0]
+    two_str = result_list[1]
+    three_str = result_list[2]
 
     push_all(vote_num,
         TextSendMessage(text='3位は・・・'))
@@ -328,7 +314,7 @@ def generate_result_list(number):
         if count < len(result_value_list):
             max_val = result_value_list[int(count)]
         else:
-            added_count = 3
+            added_count = 3 #exit from loop
 
     if loop_count == 1:
         ret_str.append('該当者なし')
@@ -344,11 +330,14 @@ def generate_member_list_from_value(result_dict,objvalue,vote_num):
     ret_str = u''
     for key,value in sorted_dict:
         if value == objvalue:
-            ret_str += getNameFromNum(vote_num,key)+'さん '
+            name = getNameFromNum(vote_num,key)
+            if isinstance(name,str):
+                name = name.decode('utf-8')
+
+            ret_str += name+'さん '
             count += 1
 
     ret_str += '(' + str(objvalue) + '票)でした！'
-
     return (ret_str,count)
 
 def push_all(vote_key,message):
