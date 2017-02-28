@@ -270,8 +270,10 @@ def push_result_message(vote_num):
         answer_count += int(value)
 
     member_count = redis.scard(vote_num)
+    nonvote = 0
     if member_count > answer_count:
-        push_all(vote_num,TextSendMessage(text='（棄権' + str(member_count - answer_count) + '人）'))
+        nonvote = member_count - answer_count
+        push_all(vote_num,TextSendMessage(text='（棄権' + str(nonvote) + '人）'))
 
     if answer_count == 1:
         three_str = '該当者なし'
@@ -281,7 +283,10 @@ def push_result_message(vote_num):
             name = getNameFromNum(vote_num,value)
             if isinstance(name,str):
                 name = name.decode('utf-8')
-        one_str = '全員一致で '+name+' さん（'+str(redis.hget('res_'+vote_num,value))+'票）でした！'
+        if nonvote == 0:
+            one_str = '全員一致で '+ name + ' さん（'+str(redis.hget('res_'+vote_num,value))+'票）でした！'
+        else:
+            one_str = name+' さん（'+str(redis.hget('res_'+vote_num,value))+'票）でした！'
     else :
         result_list = generate_result_list(vote_num)
         one_str = result_list[0]
@@ -318,7 +323,6 @@ def generate_result_list(number):
     while added_count < 3:
         elem_str,count = generate_member_list_from_value(redis.hgetall('res_'+number),max_val,number)
         ret_str.append(elem_str)
-
         added_count += count
         loop_count += 1
         if count < len(result_value_list):
@@ -334,7 +338,6 @@ def generate_result_list(number):
 
     return ret_str
 
-
 def generate_member_list_from_value(result_dict,objvalue,vote_num):
     sorted_dict = sorted(result_dict.items(), key=lambda x:x[1], reverse=True)
     count = 0
@@ -343,6 +346,7 @@ def generate_member_list_from_value(result_dict,objvalue,vote_num):
         if value == objvalue:
             ret_str += getNameFromNum(vote_num,key)+'さん '
             count += 1
+
     ret_str += '(' + str(objvalue) + '票)でした！'
 
     return (ret_str,count)
