@@ -228,11 +228,10 @@ def remove_member(number,sourceId):
     if redis.scard(number) == 1:
         redis.srem(number,sourceId)
         redis.delete(number+'_member')
-        redis.hdel('boardVersion',number+'_needIncr')
-        redis.hdel('boardVersion',number)
+        
     else:
         redis.srem(number,sourceId)
-        redis.hset('boardVersion',number+'_needIncr','Y')
+        
 
     redis.hset(sourceId,'current','-')
     redis.hset(sourceId,'voted','N')
