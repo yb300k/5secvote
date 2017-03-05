@@ -8,6 +8,7 @@ import os
 import re
 import redis
 import time
+import tempfile
 
 from flask import Flask, request, abort, send_from_directory, url_for
 
@@ -22,6 +23,8 @@ from linebot.models import (
     TemplateSendMessage, ConfirmTemplate, MessageTemplateAction,
     ButtonsTemplate, URITemplateAction, PostbackTemplateAction,
     CarouselTemplate, CarouselColumn, PostbackEvent,
+    StickerMessage, StickerSendMessage, LocationMessage, LocationSendMessage,
+    ImageMessage, VideoMessage, AudioMessage,
     UnfollowEvent, FollowEvent,ImageSendMessage,
     ImagemapSendMessage, MessageImagemapAction, BaseSize, ImagemapArea
 )
@@ -103,6 +106,62 @@ def handle_unfollow(event):
     if current != '-':
         remove_member(current,sourceId)
     redis.hset(sourceId,'current','-')
+
+@handler.add(MessageEvent, message=StickerMessage)
+def handle_sticker_message(event):
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text='スタンプには対応できません\uD83D\uDE22'))
+
+@handler.add(MessageEvent, message=LocationMessage)
+def handle_location_message(event):
+    sourceId = getSourceId(event.source)
+    current = redis.hget(sourceId,'current')
+    if current is not None and current != '-':
+        display_name = getUtfName(line_bot_api.get_profile(sourceId))
+        push_all_except_me(current,sourceId,TextSendMessage(text=display_name + ':'))
+        push_all_except_me(current,sourceId,LocationSendMessage(
+            title=event.message.title, address=event.message.address,
+            latitude=event.message.latitude, longitude=event.message.longitude))
+    else:
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text='投票板に参加している時にお願いします\uD83D\uDE22'))
+
+# Other Message Type
+@handler.add(MessageEvent, message=(ImageMessage, VideoMessage, AudioMessage))
+def handle_content_message(event):
+    sourceId = getSourceId(event.source)
+    current = redis.hget(sourceId,'current')
+    if current is None or current == '-':
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text='投票板に参加している時にお願いします\uD83D\uDE22'))
+        return
+
+    if isinstance(event.message, ImageMessage):
+        ext = 'jpg'
+    elif isinstance(event.message, VideoMessage):
+        ext = 'mp4'
+    elif isinstance(event.message, AudioMessage):
+        ext = 'm4a'
+    else:
+        return
+
+    message_content = line_bot_api.get_message_content(event.message.id)
+    with tempfile.NamedTemporaryFile(dir=TMP_ROOT_PATH , prefix=ext + '-', delete=False) as tf:
+        for chunk in message_content.iter_content():
+            tf.write(chunk)
+        tempfile_path = tf.name
+
+    dist_path = tempfile_path + '.' + ext
+    dist_name = os.path.basename(dist_path)
+    os.rename(tempfile_path, dist_path)
+
+    display_name = getUtfName(line_bot_api.get_profile(sourceId))
+    push_all(current,TextSendMessage(text=display_name + ':'))
+    push_all(current,
+            TextSendMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name)))
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
